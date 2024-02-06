@@ -1,5 +1,5 @@
 const { crawlPage } = require("./crawl");
-const { sortPages } = require("./report");
+const { printPages } = require("./report");
 async function main() {
   if (process.argv.length < 3) {
     console.log("no url provided");
@@ -16,6 +16,6 @@ async function main() {
   //     console.log(page);
   //   }
 
-  console.log(sortPages(pages));
+  console.log(printPages(pages));
 }
 main();
