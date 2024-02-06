@@ -1,23 +1,47 @@
 const { JSDOM } = require("jsdom");
 
-async function crawlPage(currURL) {
+async function crawlPage(baseURL, currURL, pages) {
+  const baseURLObj = new URL(baseURL);
+  const currURLObj = new URL(currURL);
+  if (baseURLObj.hostname !== currURLObj.hostname) {
+    console.log(`not same host: ${baseURLObj.hostname} vs ${currURLObj.hostname}`);
+    return pages;
+  }
+
+  const normalizedCurrURL = normalizeURL(currURL);
+  if (pages[normalizedCurrURL] > 0) {
+    pages[normalizedCurrURL]++;
+    return pages;
+  }
+
+  pages[normalizedCurrURL] = 1;
+
   console.log(`crawling ${currURL}`);
+
   try {
     const res = await fetch(currURL);
     if (!res.ok) {
       console.log(`err with fetch with status: ${res.status} on url: ${currURL}`);
-      return;
+      return pages;
     }
 
     const contentType = res.headers.get("content-type");
     if (!contentType.includes("text/html")) {
       console.log(`non html, content-type: ${contentType} on url: ${currURL}`);
-      return;
+      return pages;
     }
-    console.log(await res.text());
+    const htmlBody = await res.text();
+
+    const nextURLs = getURLSfromHTML(htmlBody, baseURL);
+
+    for (const nextURL of nextURLs) {
+      pages = await crawlPage(baseURL, nextURL, pages);
+    }
   } catch (err) {
     console.log(`err with fetch: ${err.message}`);
   }
+
+  return pages;
 }
 
 function getURLSfromHTML(htmlBody, baseURL) {
@@ -29,14 +53,14 @@ function getURLSfromHTML(htmlBody, baseURL) {
         const urlObj = new URL(`${baseURL}${a.href}`);
         urls.push(urlObj.href);
       } catch (err) {
-        console.log("err with relative:", err.message);
+        console.log(`err with relative: ${err.message}, link href: ${a.href}`);
       }
     } else {
       try {
         const urlObj = new URL(a.href);
         urls.push(urlObj.href);
       } catch (err) {
-        console.log("err with absolute:", err.message);
+        console.log(`err with absolute: ${err.message}, link href: ${a.href}`);
       }
     }
   });
