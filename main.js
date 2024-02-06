@@ -12,10 +12,6 @@ async function main() {
   }
   const baseURL = process.argv[2];
   const pages = await crawlPage(baseURL, baseURL, {});
-  //   for (const page of Object.entries(pages)) {
-  //     console.log(page);
-  //   }
-
   console.log(printPages(pages));
 }
 main();
